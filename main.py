@@ -112,14 +112,18 @@ async def process_url(url, quality_str, token=""):
                 'Authorization': f'Bearer {token}',
                 'Client-Type': 'WEB',
                 'Organization-Id': '5eb393ee95fab7468a79d189',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Content-Type': 'application/json',
             }
             
             # List of endpoints to try
+            import urllib.parse
+            encoded_url = urllib.parse.quote(clean_url)
+            
             api_endpoints = [
-                f"https://api.penpencil.co/v1/videos/get-url?url={clean_url}",
-                f"https://api.penpencil.co/v3/files/get-video-details?url={clean_url}",
-                f"https://api.penpencil.co/v3/files/get-signed-url?url={clean_url}"
+                f"https://api.penpencil.co/v1/videos/get-url?url={encoded_url}",
+                f"https://api.penpencil.co/v3/files/get-video-details?url={encoded_url}",
+                f"https://api.penpencil.co/v3/files/get-signed-url?url={encoded_url}"
             ]
             
             if parent_id and child_id:
@@ -175,9 +179,10 @@ def build_cmd(url, name, quality_str, token=""):
         if "d1d34p8vz63oiq" in url or "sec1.pw.live" in url:
             if token and token not in ["", "default", "anything"]:
                 header_str = (
-                    f'--add-header "Authorization:Bearer {token}" '
+                    f'--add-header "Authorization: Bearer {token}" '
                     f'--add-header "Organization-Id:5eb393ee95fab7468a79d189" '
                     f'--add-header "Client-Type:WEB" '
+                    f'--add-header "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" '
                     f'--add-header "Origin:https://www.pw.live" '
                     f'--add-header "Referer:https://www.pw.live/"'
                 )
