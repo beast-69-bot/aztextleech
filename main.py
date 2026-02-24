@@ -110,6 +110,7 @@ async def process_url(url, quality_str, token=""):
         if token and token not in ["", "default", "anything"]:
             pw_headers = {
                 'Authorization': f'Bearer {token}',
+                'x-auth-token': token,
                 'Client-Type': 'WEB',
                 'Organization-Id': '5eb393ee95fab7468a79d189',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -142,7 +143,10 @@ async def process_url(url, quality_str, token=""):
                         if playable_url:
                             print(f"[PW API] Got playable URL successfully from {api_url.split('/')[3]}")
                             return playable_url
-                except Exception:
+                    else:
+                        print(f"[PW API DEBUG] {api_url.split('/')[3]} failed with {resp.status_code}: {resp.text[:100]}")
+                except Exception as e:
+                    print(f"[PW API ERROR] {api_url}: {e}")
                     continue
             
             # Fallback: try herokuapp (might be updated if user provides new one)
