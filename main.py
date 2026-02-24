@@ -107,7 +107,14 @@ async def process_url(url, quality_str, token=""):
         clean_url = url.split("&parentId")[0].split("&childId")[0].strip()
         
         # Try PW API approach using token
-        if token and token not in ["", "default", "anything"]:
+        if token == "auto":
+            if os.path.exists("pw_token.txt"):
+                with open("pw_token.txt", "r") as f:
+                    token = f.read().strip()
+            else:
+                token = None
+
+        if token and token not in ["", "default", "anything", "auto"]:
             pw_headers = {
                 'Authorization': f'Bearer {token}',
                 'x-auth-token': token,
@@ -179,9 +186,16 @@ def build_cmd(url, name, quality_str, token=""):
 
     if "/master.mpd" in url:
         # For PW MPD, add headers if token is available
+        if token == "auto":
+            if os.path.exists("pw_token.txt"):
+                with open("pw_token.txt", "r") as f:
+                    token = f.read().strip()
+            else:
+                token = None
+
         header_str = ""
         if "d1d34p8vz63oiq" in url or "sec1.pw.live" in url:
-            if token and token not in ["", "default", "anything"]:
+            if token and token not in ["", "default", "anything", "auto"]:
                 header_str = (
                     f'--add-header "Authorization: Bearer {token}" '
                     f'--add-header "Organization-Id:5eb393ee95fab7468a79d189" '
