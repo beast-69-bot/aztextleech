@@ -103,7 +103,8 @@ async def process_url(url, quality_str, token=""):
         if "&childId=" in url:
             child_id = url.split("&childId=")[1].split("&")[0]
             
-        # Extract clean MPD URL (remove &parentId=...&childId=...)
+        # Keep Original URL and Cleaned URL
+        full_url = url
         clean_url = url.split("&parentId")[0].split("&childId")[0].strip()
         
         # Try PW API approach using token
@@ -124,53 +125,66 @@ async def process_url(url, quality_str, token=""):
                 'Content-Type': 'application/json',
             }
             
-            # List of endpoints to try
             import urllib.parse
-            encoded_url = urllib.parse.quote(clean_url)
             
-            api_endpoints = [
-                f"https://api.penpencil.co/v1/videos/get-url?url={encoded_url}",
-                f"https://api.penpencil.co/v3/files/get-video-details?url={encoded_url}",
-                f"https://api.penpencil.co/v3/files/get-signed-url?url={encoded_url}"
+            # Endpoints to try with both clean and full URLs
+            api_patterns = [
+                "https://api.penpencil.co/v1/videos/get-url?url={}",
+                "https://api.penpencil.co/v3/files/get-video-details?url={}",
+                "https://api.penpencil.co/v3/files/get-signed-url?url={}"
             ]
             
-            if parent_id and child_id:
-                api_endpoints.append(f"https://api.penpencil.co/v3/files/{parent_id}/subject-content/{child_id}")
-
-            for api_url in api_endpoints:
-                try:
-                    resp = requests.get(api_url, headers=pw_headers, timeout=10)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        playable_url = None
-                        if 'data' in data:
-                            if isinstance(data['data'], dict):
-                                playable_url = data['data'].get('url') or data['data'].get('videoUrl')
-                        
-                        if playable_url:
-                            print(f"[PW API] Got playable URL successfully from {api_url.split('/')[3]}")
-                            return playable_url
-                    else:
-                        print(f"[PW API DEBUG] {api_url.split('/')[3]} failed with {resp.status_code}: {resp.text[:100]}")
-                except Exception as e:
-                    print(f"[PW API ERROR] {api_url}: {e}")
-                    continue
+            urls_to_test = [clean_url, full_url]
             
-            # Fallback: try herokuapp (might be updated if user provides new one)
+            for test_url in urls_to_test:
+                encoded_test_url = urllib.parse.quote(test_url)
+                for pattern in api_patterns:
+                    api_url = pattern.format(encoded_test_url)
+                    try:
+                        resp = requests.get(api_url, headers=pw_headers, timeout=8)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            playable_url = None
+                            if 'data' in data:
+                                if isinstance(data['data'], dict):
+                                    playable_url = data['data'].get('url') or data['data'].get('videoUrl')
+                            
+                            if playable_url:
+                                print(f"[PW API SUCCESS] Found playable URL via {api_url.split('/')[3]}")
+                                return playable_url
+                        else:
+                            # Log only if not 404 to keep logs clean
+                            if resp.status_code != 404:
+                                print(f"[PW API DEBUG] {api_url.split('/')[3]} -> {resp.status_code}")
+                    except Exception as e:
+                        continue
+            
+            # Special case for parent/child IDs
+            if parent_id and child_id:
+                special_urls = [
+                    f"https://api.penpencil.co/v3/files/{parent_id}/subject-content/{child_id}",
+                    f"https://api.penpencil.co/v3/files/subject-contents/{child_id}?parentId={parent_id}"
+                ]
+                for s_url in special_urls:
+                    try:
+                        resp = requests.get(s_url, headers=pw_headers, timeout=8)
+                        if resp.status_code == 200:
+                            p_url = resp.json().get('data', {}).get('url')
+                            if p_url: return p_url
+                    except Exception: continue
+
+            # Final Heroku Fallback
             try:
-                heroku_url = f"https://anonymouspwplayer-b99f57957198.herokuapp.com/pw?url={clean_url}&token={token}"
+                heroku_url = f"https://anonymouspwplayer-b99f57957198.herokuapp.com/pw?url={urllib.parse.quote(clean_url)}&token={token}"
                 resp = requests.get(heroku_url, timeout=10)
                 if resp.status_code == 200:
-                    data = resp.json()
-                    if 'url' in data:
-                        print(f"[HEROKU PW] Got playable URL")
-                        return data['url']
-            except Exception:
-                pass
+                    h_url = resp.json().get('url')
+                    if h_url: return h_url
+            except Exception: pass
         
-        # Final fallback: use clean MPD URL directly
+        # Fallback to clean URL
         url = clean_url
-        print(f"[PW] Using clean MPD URL (APIs failed): {url}")
+        print(f"[PW] Returning Clean MPD URL as fallback")
 
     # Brightcove
     if "edge.api.brightcove.com" in url:
