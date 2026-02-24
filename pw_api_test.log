@@ -1,0 +1,19 @@
+﻿Body 0: {"username": "9871876926", "otp": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(OTP Is Required) | Token: False
+Body 1: {"username": "9871876926", "OTP": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 2: {"username": "9871876926", "otpCode": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 3: {"username": "9871876926", "otpValue": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 4: {"username": "9871876926", "code": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 5: {"username": "9871876926", "verificationCode": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 6: {"mobile": "9871876926", "otp": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(Invalid OTP) | Token: False
+Body 7: {"mobile": "9871876926", "OTP": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(otp should not be empty) | Token: False
+Body 8: {"phone": "9871876926", "otp": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(OTP Is Required) | Token: False
+Body 9: {"countryCode": "+91", "mobile": "9871876926", "otp": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(Invalid OTP) | Token: False
+Body 10: {"countryCode": "+91", "username": "9871876926", "otp": "313693", "organizationId": "5eb393ee95fab7468a79d189"} -> 400 | FAIL(OTP Is Required) | Token: False
+
+
+--- Trying different endpoints ---
+https://api.penpencil.co/v1/users/verify-otp -> 400 | success=False | msg=OTP Is Required
+https://api.penpencil.co/v1/users/login -> 404 | success=False | msg=Not Found
+https://api.penpencil.co/v1/users/login-with-otp -> 404 | success=False | msg=Not Found
+https://api.penpencil.co/v1/auth/verify-otp -> 404 | success=False | msg=Not Found
+https://api.penpencil.co/v2/users/verify-otp -> 404 | success=False | msg=Not Found

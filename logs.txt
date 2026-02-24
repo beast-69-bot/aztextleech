@@ -1,0 +1,15 @@
+22-Feb-26 11:53:36 - ERROR - This message doesn't contain any downloadable media [dispatcher.py:453]
+Traceback (most recent call last):
+  File "C:\Users\anshu\AppData\Local\Programs\Python\Python310\lib\site-packages\pyrogram\dispatcher.py", line 440, in handler_worker
+    await handler.callback(self.client, *args)
+  File "C:\Users\anshu\AppData\Local\Programs\Python\Python310\lib\site-packages\pyrogram\handlers\message_handler.py", line 154, in resolve_future_or_callback
+    await self.original_callback(client, message, *args)
+  File "C:\Users\anshu\AppData\Local\Programs\Python\Python310\lib\site-packages\pyromod\listen\listen.py", line 93, in resolve_listener
+    await self.user_callback(client, message, *args)
+  File "C:\Users\anshu\Downloads\Txt1-main\main.py", line 339, in batch_downloader
+    x = await input_msg.download()
+  File "C:\Users\anshu\AppData\Local\Programs\Python\Python310\lib\site-packages\pyrogram\types\messages_and_media\message.py", line 5066, in download
+    return await self._client.download_media(
+  File "C:\Users\anshu\AppData\Local\Programs\Python\Python310\lib\site-packages\pyrogram\methods\messages\download_media.py", line 133, in download_media
+    raise ValueError("This message doesn't contain any downloadable media")
+ValueError: This message doesn't contain any downloadable media
