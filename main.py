@@ -429,7 +429,7 @@ async def txt_handler(bot: Client, m: Message):
             url = "https://" + Vxy
             link0 = "https://" + Vxy
 
-            name1 = links[i][0].replace("(", "[").replace(")", "]").replace("_", "").replace("\t", "").replace(":", "").replace("/", "").replace("+", "").replace("#", "").replace("|", "").replace("@", "").replace("*", "").replace(".", "").replace("https", "").replace("http", "").replace('"', '').replace("'", "").strip()
+            name1 = helper.get_safe_name(links[i][0])
             name = f'{name1[:60]}'
             
             if "visionias" in url:
@@ -469,9 +469,15 @@ async def txt_handler(bot: Client, m: Message):
                 url   = response.json()['url']
                                                         
             elif "d1d34p8vz63oiq" in url or "sec1.pw.live" in url:
-                vid_id =  url.split('/')[-2]
-                encoded_url = urllib.parse.quote(url, safe='')
-                url =  f"{api_url}pw-dl?url={encoded_url}&token={raw_text4}&authorization={api_token}&q={raw_text2}"
+                final_url, cookies = await helper.get_pw_info(url, raw_text4)
+                if final_url and cookies:
+                    cookie_file = f"cookies_{m.from_user.id}.txt"
+                    helper.create_cookie_file(cookie_file, *cookies)
+                    cmd = f'yt-dlp -S "height:{raw_text2},ext:mp4" -N 10 --no-check-certificates --hls-prefer-ffmpeg --cookies {cookie_file} --add-header "Authorization:Bearer {raw_text4}" -o "{name}.mp4" "{final_url}"'
+                else:
+                    await m.reply_text("❌ Failed to fetch PW signed cookies. Please check your token.")
+                    count += 1
+                    continue
 
             if "pdf*" in url:
                 url = f"https://dragoapi.vercel.app/pdf/{url}"
