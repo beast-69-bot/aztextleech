@@ -109,10 +109,14 @@ async def process_url(url, quality_str, token=""):
         
         # Try PW API approach using token
         if token == "auto":
-            if os.path.exists("pw_token.txt"):
+            # 1. Check Env Var (Persistent)
+            token = os.environ.get("PW_TOKEN")
+            # 2. Check File (Temporary/User set)
+            if not token and os.path.exists("pw_token.txt"):
                 with open("pw_token.txt", "r") as f:
                     token = f.read().strip()
-            else:
+            
+            if not token:
                 token = None
 
         if token and token not in ["", "default", "anything", "auto"]:
@@ -201,10 +205,14 @@ def build_cmd(url, name, quality_str, token=""):
     if "/master.mpd" in url:
         # For PW MPD, add headers if token is available
         if token == "auto":
-            if os.path.exists("pw_token.txt"):
+            # 1. Check Env Var (Persistent)
+            token = os.environ.get("PW_TOKEN")
+            # 2. Check File (Temporary/User set)
+            if not token and os.path.exists("pw_token.txt"):
                 with open("pw_token.txt", "r") as f:
                     token = f.read().strip()
-            else:
+            
+            if not token:
                 token = None
 
         header_str = ""
