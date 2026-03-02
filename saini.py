@@ -363,13 +363,12 @@ async def send_vid(bot: Client, m: Message,cc,filename,thumb,name,prog):
         await reply.delete(True)
 
 def get_safe_name(name):
-    return re.sub(r'[<>:"/\|?*\']', '', name)
+    return re.sub(r'[<>:"/\\|?*\'\s]', '', name).strip()
 
 async def get_pw_info(original_url, token):
     try:
-        # 1. Convert .mpd to .m3u8 and extract base URL
-        m3u8_url = original_url.split('?')[0].replace(".mpd", ".m3u8")
-        base_url = m3u8_url
+        # 1. Extract base URL - split on both ? and & and convert .mpd to .m3u8
+        base_url = re.split(r'[?&]', original_url)[0].replace(".mpd", ".m3u8")
         
         # 2. Fetch signed cookies
         headers = {
@@ -377,42 +376,48 @@ async def get_pw_info(original_url, token):
             "Content-Type": "application/json",
             "client-type": "WEB"
         }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                "https://api.penpencil.co/v1/files/get-signed-cookie",
-                json={"url": base_url},
-                headers=headers
-            ) as resp:
-                if resp.status != 200:
-                    print(f"Penpencil API error: {resp.status}")
-                    return None, None
-                data = await resp.json()
-                if not data.get("data"):
-                    print("No data in Penpencil response")
-                    return None, None
-                
-                signed_params = data["data"]
-                final_url = f"{base_url}{signed_params}"
-                
-                # 3. Extract cookie values
-                params_dict = urllib.parse.parse_qs(signed_params.lstrip('?'))
-                policy = params_dict.get('Policy', [''])[0]
-                keypair = params_dict.get('Key-Pair-Id', [''])[0]
-                signature = params_dict.get('Signature', [''])[0]
-                
-                return final_url, (policy, keypair, signature)
+        
+        # Using requests to ensure case-sensitive headers (client-type: WEB)
+        resp = requests.post(
+            "https://api.penpencil.co/v1/files/get-signed-cookie",
+            json={"url": base_url},
+            headers=headers,
+            timeout=15
+        )
+        
+        if resp.status_code != 200:
+            print(f"Penpencil API error: {resp.status_code}")
+            return None, None
+            
+        data = resp.json()
+        if not data.get("data"):
+            print("No data in Penpencil response")
+            return None, None
+        
+        signed_params = data["data"]
+        final_url = f"{base_url}{signed_params}"
+        
+        # 3. Extract cookie values using parse_qs
+        params_dict = urllib.parse.parse_qs(signed_params.lstrip('?'))
+        policy = params_dict.get('Policy', [''])[0]
+        keypair = params_dict.get('Key-Pair-Id', [''])[0]
+        signature = params_dict.get('Signature', [''])[0]
+        
+        return final_url, (policy, keypair, signature)
     except Exception as e:
         print(f"Error in get_pw_info: {str(e)}")
         return None, None
 
 def create_cookie_file(filename, policy, keypair, signature):
-    content = f"""# Netscape HTTP Cookie File
-.cloudfront.net	TRUE	/	TRUE	0	CloudFront-Policy	{policy}
-.cloudfront.net	TRUE	/	TRUE	0	CloudFront-Key-Pair-Id	{keypair}
-.cloudfront.net	TRUE	/	TRUE	0	CloudFront-Signature	{signature}
-.pw.live	TRUE	/	TRUE	0	CloudFront-Policy	{policy}
-.pw.live	TRUE	/	TRUE	0	CloudFront-Key-Pair-Id	{keypair}
-.pw.live	TRUE	/	TRUE	0	CloudFront-Signature	{signature}
-"""
-    with open(filename, "w") as f:
+    # Netscape format requires TAB characters between fields
+    lines = [
+        f".cloudfront.net\tTRUE\t/\tTRUE\t0\tCloudFront-Policy\t{policy}",
+        f".cloudfront.net\tTRUE\t/\tTRUE\t0\tCloudFront-Key-Pair-Id\t{keypair}",
+        f".cloudfront.net\tTRUE\t/\tTRUE\t0\tCloudFront-Signature\t{signature}",
+        f".pw.live\tTRUE\t/\tTRUE\t0\tCloudFront-Policy\t{policy}",
+        f".pw.live\tTRUE\t/\tTRUE\t0\tCloudFront-Key-Pair-Id\t{keypair}",
+        f".pw.live\tTRUE\t/\tTRUE\t0\tCloudFront-Signature\t{signature}"
+    ]
+    content = "# Netscape HTTP Cookie File\n" + "\n".join(lines) + "\n"
+    with open(filename, "w", encoding="utf-8") as f:
         f.write(content)
